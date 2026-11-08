@@ -131,21 +131,23 @@ button:disabled{opacity:.5;cursor:not-allowed}
   $("note").addEventListener("input",function(){noteEdited=true});
 
   // 자동 번역
-  var noteEdited=false,timer=null,seq=0,ctrl=null;
+  var noteEdited=false,timer=null,seq=0,ctrl=null,dirty=false,busy=false;
   function setSt(t,err){$("st").textContent=t;$("st").className="st"+(err?" err":"")}
   function meaningful(t){return /\p{L}/u.test(t.replace(/[\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uD7B0-\uD7FF]/g,""))}
   function bad(){
-    seq++;if(ctrl)try{ctrl.abort()}catch(e){}
+    seq++;busy=false;if(ctrl)try{ctrl.abort()}catch(e){}
     $("note").value="";save();render();
     setSt("번역할 수 없는 내용입니다. 작업 내용을 다시 입력해 주십시오.",true);
   }
   async function translate(){
     var src=$("content").value.trim();
     if(!src)return;
+    dirty=false;
     if(!meaningful(src)){bad();return}
     var my=++seq;
     if(ctrl)try{ctrl.abort()}catch(e){}
     ctrl=new AbortController();
+    busy=true;
     setSt("번역 중…");
     try{
       var res=await fetch("/api/translate",{
@@ -172,6 +174,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
     }catch(e){
       if(my!==seq)return;
       setSt("번역에 실패했습니다. '다시 번역'을 눌러 주십시오.");
+    }finally{
+      if(my===seq)busy=false;
     }
   }
   $("content").addEventListener("input",function(){
@@ -179,18 +183,23 @@ button:disabled{opacity:.5;cursor:not-allowed}
     $("note").disabled=!has;
     $("retr").disabled=!has;
     if(!has){
-      seq++;if(ctrl)try{ctrl.abort()}catch(e){}
+      seq++;busy=false;dirty=false;
+      if(ctrl)try{ctrl.abort()}catch(e){}
       $("note").value="";noteEdited=false;setSt("");
     }else{
-      clearTimeout(timer);
-      timer=setTimeout(translate,1200);
+      dirty=true;
+      setSt("입력을 마치고 다른 칸으로 이동하면 자동으로 번역됩니다.");
     }
     render();
   });
+  // 입력칸을 벗어날 때, 내용이 바뀐 경우에만 한 번 번역
   $("content").addEventListener("blur",function(){
-    if($("content").value.trim()&&timer){clearTimeout(timer);timer=null;translate()}
+    if(dirty&&$("content").value.trim())translate();
   });
-  $("retr").addEventListener("click",function(){clearTimeout(timer);translate()});
+  $("retr").addEventListener("click",function(){
+    if(busy)return; // 입력칸을 벗어나며 이미 번역 중이면 중복 호출 방지
+    translate();
+  });
 
   // 복사
   function flash(t){$("st2").textContent=t;setTimeout(function(){$("st2").textContent=""},2500)}
