@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>데이터 확보 문서 생성기</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#1d2330;--sub:#667085;--line:#d9dde5;--accent:#2f5bea;--accent-t:#fff;--pre:#f0f2f6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171d;--card:#1d222b;--text:#e8ebf1;--sub:#9aa3b2;--line:#323a47;--accent:#6e8cff;--accent-t:#0f1320;--pre:#171b22}}
+:root[data-theme="dark"]{--bg:#14171d;--card:#1d222b;--text:#e8ebf1;--sub:#9aa3b2;--line:#323a47;--accent:#6e8cff;--accent-t:#0f1320;--pre:#171b22}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 -apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:20px;margin:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+#theme{position:relative;flex:none;width:64px;height:32px;padding:0;border-radius:16px;border:1px solid var(--line);background:var(--pre);cursor:pointer}
+.sw{display:flex;align-items:center;gap:8px;flex:none}
+#modeIc{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--pre);font-size:16px;line-height:1}
+#theme .kn{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--accent);transition:transform .2s ease}
+#theme[aria-checked="true"] .kn{transform:translateX(32px)}
+.desc{color:var(--sub);margin:0 0 20px;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+label{display:block;font-size:13px;font-weight:600;margin:22px 0 6px}
+label:first-child{margin-top:0}
+label small{font-weight:400;color:var(--sub);margin-left:6px}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+textarea{resize:vertical;min-height:72px}
+textarea:disabled{opacity:.5;cursor:not-allowed}
+input[readonly]{opacity:.8}
+.row{display:flex;gap:10px;margin-top:22px}.row>div{flex:1}
+pre{margin:0;white-space:pre-wrap;word-break:break-word;background:var(--pre);border:1px solid var(--line);border-radius:8px;padding:14px;font:13.5px/1.7 ui-monospace,SFMono-Regular,Menlo,"D2Coding",monospace}
+.btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+button{padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-weight:600;cursor:pointer}
+button.p{background:var(--accent);color:var(--accent-t);border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.st{font-size:12px;color:var(--sub);margin-top:4px;min-height:18px}
+.st.err{color:#e5484d}
+.card h2{font-size:15px;margin:0 0 12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>데이터 확보 문서 생성기</h1>
+    <div class="sw"><span id="modeIc" aria-hidden="true"></span><button id="theme" type="button" role="switch" aria-checked="false" aria-label="다크 모드" title="왼쪽: 라이트 / 오른쪽: 다크"><span class="kn"></span></button></div>
+  </div>
+  <p class="desc">양식에 맞게 입력하면 오른쪽에 문서가 바로 만들어집니다.</p>
+  <div class="grid">
+    <div class="card">
+      <label>확보일</label>
+      <input id="date" readonly>
+      <label>Task명</label>
+      <input id="task" type="text">
+      <label>작성자</label>
+      <input id="author" type="text" placeholder="이름 입력 후 스페이스를 누르면 쉼표(,)가 입력됩니다.">
+      <label>작업 내용</label>
+      <textarea id="content"></textarea>
+      <label>작업 분류</label>
+      <input id="category" type="text">
+      <div class="row">
+        <div><label>취득 주체</label>
+          <select id="subject"><option>로봇</option><option>사람</option></select></div>
+        <div><label>취득 장비</label>
+          <input id="equip" type="text"></div>
+      </div>
+      <label>수집 방법<small>비우면 Teleoperation</small></label>
+      <input id="method" type="text" placeholder="Teleoperation">
+      <div class="row">
+        <div><label>데이터 길이(h)</label>
+          <input id="hours" type="text" inputmode="decimal" placeholder="예: 12.5"></div>
+        <div><label>용량(GB)</label>
+          <input id="gb" type="text" inputmode="decimal" placeholder="예: 340.2"></div>
+        <div><label>에피소드 수</label>
+          <input id="eps" type="text" inputmode="numeric" placeholder="예: 150"></div>
+      </div>
+      <label>비고<small>작업 내용을 영어로 자동 번역 · 수정 가능</small></label>
+      <textarea id="note" disabled></textarea>
+      <div class="st" id="st"></div>
+      <div class="btns"><button id="retr" type="button" disabled>다시 번역</button><button id="reset" type="button">전체 초기화</button></div>
+    </div>
+    <div class="card">
+      <h2>미리보기</h2>
+      <pre id="out"></pre>
+      <div class="btns">
+        <button class="p" id="copy" type="button">복사</button>
+      </div>
+      <div class="st" id="st2"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var d=new Date(),p=function(n){return String(n).padStart(2,"0")};
+  var today=d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate());
+  $("date").value=today;
+
+  // 입력 제한
+  function limit(id,re){
+    $(id).addEventListener("input",function(e){
+      var v=e.target.value.replace(re,"");
+      if(v!==e.target.value)e.target.value=v;
+      render();
+    });
+  }
+  limit("hours",/[\p{L}\s]/gu);   // 특수문자 + 숫자만
+  limit("gb",/[\p{L}\s]/gu);
+  limit("eps",/\D/g);             // 숫자만
+
+  // 문서 생성
+  function u(v,s){v=v.trim();return v?v+s:""}
+  function render(){
+    var method=$("method").value.trim()||"Teleoperation";
+    var L=[
+      ["확보일",today],["Task명",$("task").value],["작성자",$("author").value.replace(/[,\s]+$/,"")],
+      ["작업 내용",$("content").value],["작업 분류",$("category").value],
+      ["취득 주체",$("subject").value],["취득 장비",$("equip").value],
+      ["수집 방법",method],["데이터 길이(h)",u($("hours").value,"h")],
+      ["용량(GB)",u($("gb").value,"GB")],["에피소드 수",u($("eps").value,"ep")],
+      ["비고",$("note").value]
+    ];
+    $("out").textContent=L.map(function(r){return r[0]+" : "+r[1]}).join("\n");
+  }
+  ["task","author","category","equip","method","note"].forEach(function(i){$(i).addEventListener("input",render)});
+  $("subject").addEventListener("change",render);
+  $("note").addEventListener("input",function(){noteEdited=true});
+
+  // 자동 번역
+  var noteEdited=false,timer=null,seq=0,ctrl=null;
+  function setSt(t,err){$("st").textContent=t;$("st").className="st"+(err?" err":"")}
+  function meaningful(t){return /\p{L}/u.test(t.replace(/[\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uD7B0-\uD7FF]/g,""))}
+  function bad(){
+    seq++;if(ctrl)try{ctrl.abort()}catch(e){}
+    $("note").value="";save();render();
+    setSt("번역할 수 없는 내용입니다. 작업 내용을 다시 입력해 주십시오.",true);
+  }
+  async function translate(){
+    var src=$("content").value.trim();
+    if(!src)return;
+    if(!meaningful(src)){bad();return}
+    var my=++seq;
+    if(ctrl)try{ctrl.abort()}catch(e){}
+    ctrl=new AbortController();
+    setSt("번역 중…");
+    try{
+      var res=await fetch("/api/translate",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({text:src}),
+        signal:ctrl.signal
+      });
+      var j={};
+      try{j=await res.json()}catch(e){}
+      if(my!==seq)return;
+      if(!res.ok){
+        if(res.status===429)setSt("요청이 많습니다. 잠시 후 '다시 번역'을 눌러 주십시오.");
+        else if(j.error==="not_configured")setSt("번역 서버 설정이 되어 있지 않습니다. 관리자에게 문의하십시오.");
+        else if(res.status===413||j.error==="too_long")setSt("작업 내용이 너무 깁니다. 내용을 줄여 주십시오.");
+        else setSt("번역에 실패했습니다. '다시 번역'을 눌러 주십시오.");
+        return;
+      }
+      if(j.untranslatable){bad();return}
+      $("note").value=j.translation||"";
+      noteEdited=false;
+      save();setSt("번역 완료 · 필요 시 수정하십시오.");
+      render();
+    }catch(e){
+      if(my!==seq)return;
+      setSt("번역에 실패했습니다. '다시 번역'을 눌러 주십시오.");
+    }
+  }
+  $("content").addEventListener("input",function(){
+    var has=$("content").value.trim().length>0;
+    $("note").disabled=!has;
+    $("retr").disabled=!has;
+    if(!has){
+      seq++;if(ctrl)try{ctrl.abort()}catch(e){}
+      $("note").value="";noteEdited=false;setSt("");
+    }else{
+      clearTimeout(timer);
+      timer=setTimeout(translate,1200);
+    }
+    render();
+  });
+  $("content").addEventListener("blur",function(){
+    if($("content").value.trim()&&timer){clearTimeout(timer);timer=null;translate()}
+  });
+  $("retr").addEventListener("click",function(){clearTimeout(timer);translate()});
+
+  // 복사
+  function flash(t){$("st2").textContent=t;setTimeout(function(){$("st2").textContent=""},2500)}
+  $("copy").addEventListener("click",async function(){
+    var t=$("out").textContent;
+    try{await navigator.clipboard.writeText(t);flash("복사되었습니다.");return}catch(e){}
+    try{
+      var ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();
+      document.execCommand("copy");document.body.removeChild(ta);flash("복사되었습니다.");
+    }catch(e2){flash("복사에 실패했습니다. 미리보기를 직접 선택하여 복사해 주십시오.")}
+  });
+  // 다크/라이트 전환
+  var root=document.documentElement,mq=window.matchMedia("(prefers-color-scheme: dark)");
+  try{var saved=localStorage.getItem("theme");if(saved=="dark"||saved=="light")root.setAttribute("data-theme",saved)}catch(e){}
+  function isDark(){var t=root.getAttribute("data-theme");return t?t=="dark":mq.matches}
+  function paintBtn(){var dk=isDark();$("theme").setAttribute("aria-checked",dk?"true":"false");$("modeIc").textContent=dk?"\ud83c\udf19":"\u2600\ufe0f"}
+  $("theme").addEventListener("click",function(){
+    var next=isDark()?"light":"dark";
+    root.setAttribute("data-theme",next);
+    try{localStorage.setItem("theme",next)}catch(e){}
+    paintBtn();
+  });
+  paintBtn();
+
+  // 작성자: 이름 뒤 스페이스 -> ", " 자동 입력
+  $("author").addEventListener("input",function(e){
+    if(e.isComposing)return;
+    var el=e.target,v=el.value;
+    if(el.selectionStart!==v.length)return;
+    var n=v;
+    if(/^\s+$/.test(v))n="";
+    else if(/[^\s,]\s+$/.test(v))n=v.replace(/\s+$/,", ");
+    else if(/,\s{2,}$/.test(v))n=v.replace(/,\s+$/,", ");
+    if(n!==v){el.value=n;el.setSelectionRange(n.length,n.length);render()}
+  });
+
+  // 로컬 스토리지 저장/복원
+  var KEY="taskDocForm",IDS=["task","author","content","category","subject","equip","method","hours","gb","eps","note"];
+  function save(){
+    try{var o={};IDS.forEach(function(i){o[i]=$(i).value});localStorage.setItem(KEY,JSON.stringify(o))}catch(e){}
+  }
+  function restore(){
+    try{
+      var raw=localStorage.getItem(KEY);if(!raw)return;
+      var o=JSON.parse(raw);
+      IDS.forEach(function(i){if(typeof o[i]==="string")$(i).value=o[i]});
+      if($("subject").selectedIndex<0)$("subject").selectedIndex=0;
+      var has=$("content").value.trim().length>0;
+      $("note").disabled=!has;$("retr").disabled=!has;
+    }catch(e){}
+  }
+  document.addEventListener("input",save);
+  document.addEventListener("change",save);
+  restore();
+
+  // 일괄 초기화 (두 번 눌러야 실행)
+  var rt=null;
+  $("reset").addEventListener("click",function(){
+    var b=$("reset");
+    if(!rt){
+      b.textContent="한 번 더 누르면 초기화됩니다";
+      rt=setTimeout(function(){rt=null;b.textContent="전체 초기화"},3000);
+      return;
+    }
+    clearTimeout(rt);rt=null;b.textContent="전체 초기화";
+    IDS.forEach(function(i){$(i).value=""});
+    $("subject").selectedIndex=0;
+    $("note").disabled=true;$("retr").disabled=true;
+    clearTimeout(timer);timer=null;seq++;
+    if(ctrl)try{ctrl.abort()}catch(e){}
+    noteEdited=false;setSt("");
+    try{localStorage.removeItem(KEY)}catch(e){}
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
