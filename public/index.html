@@ -160,7 +160,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
       try{j=await res.json()}catch(e){}
       if(my!==seq)return;
       if(!res.ok){
-        if(res.status===429)setSt("요청이 많습니다. 잠시 후 '다시 번역'을 눌러 주십시오.");
+        if(j.error==="quota_exceeded")setSt("이번 달 무료 번역 한도를 모두 사용했습니다. 비고를 직접 입력해 주십시오.",true);
+        else if(res.status===429)setSt("요청이 많습니다. 잠시 후 '다시 번역'을 눌러 주십시오.");
         else if(j.error==="not_configured")setSt("번역 서버 설정이 되어 있지 않습니다. 관리자에게 문의하십시오.");
         else if(res.status===413||j.error==="too_long")setSt("작업 내용이 너무 깁니다. 내용을 줄여 주십시오.");
         else setSt("번역에 실패했습니다. '다시 번역'을 눌러 주십시오.");
