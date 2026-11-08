@@ -1,48 +1,13 @@
-# 데이터 확보 문서 생성기 (외부 서버 배포용)
+# 데이터 확보 문서 생성기
 
-구성: 정적 페이지(`public/index.html`) + DeepL 번역 프록시 서버(`server.js`, 의존성 없음).
-브라우저는 `/api/translate` 만 호출하고, API 키는 서버 환경변수에만 있습니다.
+양식에 맞게 입력하면 문서가 만들어지는 정적 페이지입니다. 서버·API 키가 필요 없으며 `index.html` 하나로 동작합니다.
 
-## 준비물
-- Node.js 18 이상
-- DeepL API 키 (DeepL API Free 가입 후 계정 설정의 API Keys 에서 확인)
+## GitHub Pages 배포
+1. 저장소 Settings → Pages 로 이동합니다.
+2. Source 를 `Deploy from a branch` 로 선택합니다.
+3. Branch 는 `master`, 폴더는 `/ (root)` 를 선택하고 Save 를 누릅니다.
+4. 잠시 후 `https://계정.github.io/저장소이름/` 에서 접속할 수 있습니다.
 
-## 로컬 실행
-```bash
-cp .env.example .env     # DEEPL_API_KEY 입력
-node server.js           # http://localhost:3000
-```
-
-## 배포 방법
-**A. 일반 서버(VM, 사내 서버)**
-1. 폴더를 서버에 복사하고 `.env` 를 만듭니다.
-2. `node server.js` 로 실행합니다. 상시 실행은 pm2(`pm2 start server.js --name task-doc`) 또는 systemd 를 권장합니다.
-3. nginx 등으로 HTTPS 를 붙이고 `TRUST_PROXY=1` 을 설정합니다.
-
-**B. Docker**
-```bash
-docker build -t task-doc .
-docker run -d -p 3000:3000 -e DEEPL_API_KEY=발급받은키 --name task-doc task-doc
-```
-
-**C. Render / Railway / Fly.io 등 PaaS**
-- 저장소를 연결하고 Start Command 를 `node server.js` 로 지정합니다.
-- 환경변수에 `DEEPL_API_KEY` 를 등록합니다. (PORT 는 플랫폼이 자동 지정)
-
-## 환경변수
-| 이름 | 설명 | 기본값 |
-|---|---|---|
-| `DEEPL_API_KEY` | DeepL API 키 (필수) | - |
-| `DEEPL_API_URL` | DeepL 주소 직접 지정 | 키 형태로 Free/Pro 자동 선택 |
-| `PORT` | 포트 | 3000 |
-| `BASIC_AUTH` | `아이디:비밀번호` 설정 시 접속 인증 사용 | 없음 |
-| `RATE_PER_MIN` | IP당 분당 번역 횟수 | 20 |
-| `TRUST_PROXY` | 프록시 뒤에서 `1` | 0 |
-
-## 운영 시 참고
-- DeepL API Free 는 월 50만 자까지 무료이며, 한도를 넘으면 번역이 멈추고 화면에 안내가 표시됩니다. 사용량은 DeepL 계정 화면에서 확인하십시오.
-- 외부에 공개하는 경우 `BASIC_AUTH` 설정을 권장합니다.
-- 의미 없는 입력(자모음·숫자·기호만 있는 경우)은 DeepL 을 호출하지 않아 글자 수가 차감되지 않습니다.
-- 작업 내용은 최대 2,000자까지 번역됩니다.
-- 자동 번역은 '작업 내용' 입력칸을 벗어날 때, 내용이 바뀐 경우에만 한 번 실행됩니다. (API 호출량 절감)
-- 입력값 자동 저장은 각 사용자의 브라우저 로컬 스토리지를 사용하므로 서버에는 저장되지 않습니다.
+## 참고
+- 입력 내용은 각자 브라우저의 로컬 스토리지에 저장됩니다. (서버에는 저장되지 않음)
+- 비고는 직접 입력합니다.

@@ -39,7 +39,6 @@ button{padding:9px 14px;border-radius:8px;border:1px solid var(--line);backgroun
 button.p{background:var(--accent);color:var(--accent-t);border-color:var(--accent)}
 button:disabled{opacity:.5;cursor:not-allowed}
 .st{font-size:12px;color:var(--sub);margin-top:4px;min-height:18px}
-.st.err{color:#e5484d}
 .card h2{font-size:15px;margin:0 0 12px}
 </style>
 </head>
@@ -78,10 +77,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
         <div><label>에피소드 수</label>
           <input id="eps" type="text" inputmode="numeric" placeholder="예: 150"></div>
       </div>
-      <label>비고<small>작업 내용을 영어로 자동 번역 · 수정 가능</small></label>
-      <textarea id="note" disabled></textarea>
-      <div class="st" id="st"></div>
-      <div class="btns"><button id="retr" type="button" disabled>다시 번역</button><button id="reset" type="button">전체 초기화</button></div>
+      <label>비고</label>
+      <textarea id="note"></textarea>
+      <div class="btns"><button id="reset" type="button">전체 초기화</button></div>
     </div>
     <div class="card">
       <h2>미리보기</h2>
@@ -126,81 +124,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
     ];
     $("out").textContent=L.map(function(r){return r[0]+" : "+r[1]}).join("\n");
   }
-  ["task","author","category","equip","method","note"].forEach(function(i){$(i).addEventListener("input",render)});
+  ["task","author","content","category","equip","method","note"].forEach(function(i){$(i).addEventListener("input",render)});
   $("subject").addEventListener("change",render);
-  $("note").addEventListener("input",function(){noteEdited=true});
-
-  // 자동 번역
-  var noteEdited=false,timer=null,seq=0,ctrl=null,dirty=false,busy=false;
-  function setSt(t,err){$("st").textContent=t;$("st").className="st"+(err?" err":"")}
-  function meaningful(t){return /\p{L}/u.test(t.replace(/[\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uD7B0-\uD7FF]/g,""))}
-  function bad(){
-    seq++;busy=false;if(ctrl)try{ctrl.abort()}catch(e){}
-    $("note").value="";save();render();
-    setSt("번역할 수 없는 내용입니다. 작업 내용을 다시 입력해 주십시오.",true);
-  }
-  async function translate(){
-    var src=$("content").value.trim();
-    if(!src)return;
-    dirty=false;
-    if(!meaningful(src)){bad();return}
-    var my=++seq;
-    if(ctrl)try{ctrl.abort()}catch(e){}
-    ctrl=new AbortController();
-    busy=true;
-    setSt("번역 중…");
-    try{
-      var res=await fetch("/api/translate",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({text:src}),
-        signal:ctrl.signal
-      });
-      var j={};
-      try{j=await res.json()}catch(e){}
-      if(my!==seq)return;
-      if(!res.ok){
-        if(j.error==="quota_exceeded")setSt("이번 달 무료 번역 한도를 모두 사용했습니다. 비고를 직접 입력해 주십시오.",true);
-        else if(res.status===429)setSt("요청이 많습니다. 잠시 후 '다시 번역'을 눌러 주십시오.");
-        else if(j.error==="not_configured")setSt("번역 서버 설정이 되어 있지 않습니다. 관리자에게 문의하십시오.");
-        else if(res.status===413||j.error==="too_long")setSt("작업 내용이 너무 깁니다. 내용을 줄여 주십시오.");
-        else setSt("번역에 실패했습니다. '다시 번역'을 눌러 주십시오.");
-        return;
-      }
-      if(j.untranslatable){bad();return}
-      $("note").value=j.translation||"";
-      noteEdited=false;
-      save();setSt("번역 완료 · 필요 시 수정하십시오.");
-      render();
-    }catch(e){
-      if(my!==seq)return;
-      setSt("번역에 실패했습니다. '다시 번역'을 눌러 주십시오.");
-    }finally{
-      if(my===seq)busy=false;
-    }
-  }
-  $("content").addEventListener("input",function(){
-    var has=$("content").value.trim().length>0;
-    $("note").disabled=!has;
-    $("retr").disabled=!has;
-    if(!has){
-      seq++;busy=false;dirty=false;
-      if(ctrl)try{ctrl.abort()}catch(e){}
-      $("note").value="";noteEdited=false;setSt("");
-    }else{
-      dirty=true;
-      setSt("입력을 마치고 다른 칸으로 이동하면 자동으로 번역됩니다.");
-    }
-    render();
-  });
-  // 입력칸을 벗어날 때, 내용이 바뀐 경우에만 한 번 번역
-  $("content").addEventListener("blur",function(){
-    if(dirty&&$("content").value.trim())translate();
-  });
-  $("retr").addEventListener("click",function(){
-    if(busy)return; // 입력칸을 벗어나며 이미 번역 중이면 중복 호출 방지
-    translate();
-  });
 
   // 복사
   function flash(t){$("st2").textContent=t;setTimeout(function(){$("st2").textContent=""},2500)}
@@ -248,8 +173,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
       var o=JSON.parse(raw);
       IDS.forEach(function(i){if(typeof o[i]==="string")$(i).value=o[i]});
       if($("subject").selectedIndex<0)$("subject").selectedIndex=0;
-      var has=$("content").value.trim().length>0;
-      $("note").disabled=!has;$("retr").disabled=!has;
     }catch(e){}
   }
   document.addEventListener("input",save);
@@ -268,10 +191,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
     clearTimeout(rt);rt=null;b.textContent="전체 초기화";
     IDS.forEach(function(i){$(i).value=""});
     $("subject").selectedIndex=0;
-    $("note").disabled=true;$("retr").disabled=true;
-    clearTimeout(timer);timer=null;seq++;
-    if(ctrl)try{ctrl.abort()}catch(e){}
-    noteEdited=false;setSt("");
     try{localStorage.removeItem(KEY)}catch(e){}
     render();
   });
